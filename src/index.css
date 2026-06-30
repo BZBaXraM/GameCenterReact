@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Driver Game Center theme tokens.
+   Light (default :root) is a clean bright palette with violet/teal neon accents;
+   dark ([data-theme="dark"]) is the full neon club look. */
+:root {
+  --bg: #f3f2fb;
+  --surface: #ffffff;
+  --surface-2: #ece9f9;
+  --text: #16142c;
+  --muted: #605c80;
+  --border: #e2def3;
+  --accent: #7c3aed;
+  --accent-ink: #ffffff;
+  --neon: #0891b2;
+  --neon-2: #db2777;
+}
+
+[data-theme="dark"] {
+  --bg: #050509;
+  --surface: #100e22;
+  --surface-2: #181534;
+  --text: #f3f5ff;
+  --muted: #8b91bd;
+  --border: #241f48;
+  --accent: #7c3aed;
+  --accent-ink: #ffffff;
+  --neon: #00e5ff;
+  --neon-2: #ff2bd6;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--text);
+  --color-muted: var(--muted);
+  --color-line: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-neon: var(--neon);
+  --color-neon-2: var(--neon-2);
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-body: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
+}
+
+/* offset anchor targets so the sticky navbar doesn't cover them */
+#menu, #about, #contact {
+  scroll-margin-top: 120px;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* subtle scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up { animation: fadeUp 0.4s ease both; }
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+.animate-slide-in { animation: slideIn 0.3s ease both; }
+
+@keyframes cartbar-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Neon helpers ─────────────────────────────────────────────────────────── */
+.neon-text {
+  color: var(--neon);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--neon) 70%, transparent),
+               0 0 18px color-mix(in srgb, var(--neon) 45%, transparent);
+}
+.neon-border {
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent),
+              0 0 18px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+.neon-card {
+  background: linear-gradient(160deg,
+    color-mix(in srgb, var(--surface) 92%, var(--accent)) 0%,
+    var(--surface) 60%);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent),
+              0 0 22px -8px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+.neon-glow {
+  box-shadow: 0 0 14px color-mix(in srgb, var(--neon) 55%, transparent),
+              0 0 30px color-mix(in srgb, var(--neon) 30%, transparent);
+}
+@keyframes neonPulse {
+  0%, 100% { box-shadow: 0 0 10px color-mix(in srgb, var(--neon) 55%, transparent); }
+  50% { box-shadow: 0 0 22px color-mix(in srgb, var(--neon) 85%, transparent); }
+}
+.animate-neon-pulse { animation: neonPulse 1.6s ease-in-out infinite; }

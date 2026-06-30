@@ -1,0 +1,12 @@
+services:
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: coffee-in-lab-client
+    container_name: coffee-client
+    ports:
+      - "8080:3000"
+    restart: unless-stopped
+    # Static React SPA only. The backend runs separately; the app reaches it
+    # directly via the VITE_API_BASE URL baked in at build time (see src/api.js).
