@@ -2,7 +2,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
-const BASE = '/driver-game-center/';
+// Served at the root of its own subdomain (game-center.bahram.site).
+const BASE = '/';
 
 // Dev-only: Vite's dev server is mounted at `base`, so hitting the bare path
 // (no trailing slash) shows its "did you mean /driver-game-center/" helper page.
