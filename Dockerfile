@@ -19,8 +19,7 @@ FROM nginx:1.27-alpine AS runtime
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Static assets produced by the build stage.
-# Vite builds with base '/driver-game-center/', so the files must live under a
-# matching subdirectory for the asset URLs to resolve on disk.
+# Vite builds with base '/', so assets resolve from the web root.
 COPY --from=build /app/dist /usr/share/nginx/html
 
 EXPOSE 3000

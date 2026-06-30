@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import MenuPage from './pages/MenuPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 
-// Single-tenant app served under /driver-game-center (BrowserRouter basename),
+// Single-tenant app served at the root of its subdomain,
 // so in-app paths are '/' (menu) and '/admin'.
 export default function App() {
   return (
