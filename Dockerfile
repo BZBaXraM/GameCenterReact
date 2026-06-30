@@ -21,7 +21,7 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Static assets produced by the build stage.
 # Vite builds with base '/driver-game-center/', so the files must live under a
 # matching subdirectory for the asset URLs to resolve on disk.
-COPY --from=build /app/dist /usr/share/nginx/html/driver-game-center
+COPY --from=build /app/dist /usr/share/nginx/html
 
 EXPOSE 3000
 CMD ["nginx", "-g", "daemon off;"]
