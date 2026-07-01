@@ -15,7 +15,7 @@ export default function Navbar({ onSearch, search }) {
           <img
             src={assetUrl(settings.logo_image || activeRestaurant?.logo || `${import.meta.env.BASE_URL}driver-game-center-logo.jpeg`, activeRestaurant?.apiBase)}
             alt=""
-            className="h-11 w-11 shrink-0 rounded-full object-cover"
+            className="h-16 w-16 shrink-0 rounded-full object-cover"
           />
           <div className="min-w-0 leading-tight">
             <div className="truncate font-display text-lg font-semibold text-ink">

@@ -82,7 +82,7 @@ export default function MenuPage() {
           <img
             src={assetUrl(settings.logo_image || activeRestaurant?.logo || `${import.meta.env.BASE_URL}driver-game-center-logo.jpeg`, activeRestaurant?.apiBase)}
             alt=""
-            className="mx-auto mb-3 h-20 w-20 rounded-full object-cover neon-glow"
+            className="mx-auto mb-3 mt-10 h-36 w-36 rounded-full object-cover neon-glow"
           />
           <h1 className="font-display text-4xl font-bold tracking-tight text-ink sm:text-5xl">
             {tl(settings.restaurant_name) || 'Driver Game Center'}

@@ -33,11 +33,11 @@ export default function LandingPage() {
           {restaurants.map((restaurant) => (
             <Link key={restaurant.slug} to={`/${restaurant.slug}`} className="block">
               <article className="group flex h-full flex-col overflow-hidden rounded-lg border border-[#d9dde3] bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-[#b8c0cc] hover:shadow-md">
-                <div className="grid h-44 place-items-center border-b border-[#e5e7eb] bg-[#f9fafb] p-5">
+                <div className="grid h-56 place-items-center border-b border-[#e5e7eb] bg-[#f9fafb] p-5">
                   <img
                     src={restaurant.logo}
                     alt=""
-                    className="max-h-32 max-w-full rounded-md object-contain"
+                    className="max-h-44 max-w-full rounded-md object-contain"
                   />
                 </div>
 
