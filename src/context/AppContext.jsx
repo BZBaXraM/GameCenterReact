@@ -41,7 +41,6 @@ export function AppProvider({ children }) {
   // v2 key: bumped so older cached language choices fall back to the new 'az' default.
   const [language, setLanguage] = useState(() => localStorage.getItem('qrmenu_lang_v2') || 'az');
   const [currency, setCurrency] = useState(() => localStorage.getItem('qrmenu_currency') || 'AZN');
-  const [theme, setTheme] = useState(() => localStorage.getItem('qrmenu_theme') || 'light');
 
   const t = useStrings(language);
 
@@ -59,12 +58,6 @@ export function AppProvider({ children }) {
       .catch(() => {});
   }, [activeRestaurant, apiUrl, location.pathname]);
 
-  // Theme → <html data-theme>
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('qrmenu_theme', theme);
-  }, [theme]);
-
   // Accent color from settings → inline --accent (overrides theme default)
   useEffect(() => {
     if (settings.accent_color) {
@@ -74,10 +67,6 @@ export function AppProvider({ children }) {
 
   useEffect(() => { localStorage.setItem('qrmenu_lang_v2', language); }, [language]);
   useEffect(() => { localStorage.setItem('qrmenu_currency', currency); }, [currency]);
-
-  const toggleTheme = useCallback(() => {
-    setTheme((p) => (p === 'dark' ? 'light' : 'dark'));
-  }, []);
 
   const rates = (() => {
     try { return JSON.parse(settings.currency_rates || '{}'); } catch { return {}; }
@@ -102,7 +91,6 @@ export function AppProvider({ children }) {
     apiUrl,
     language, setLanguage,
     currency, setCurrency,
-    theme, setTheme, toggleTheme,
     t,
     tl: (v) => tl(v, language),
     convertPrice,

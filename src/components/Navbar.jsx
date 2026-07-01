@@ -3,7 +3,7 @@ import { LANGUAGES, CURRENCIES } from '../i18n.js';
 import { assetUrl } from '../api.js';
 
 export default function Navbar({ onSearch, search }) {
-  const { settings, language, setLanguage, currency, setCurrency, theme, toggleTheme, tl, t, activeRestaurant } = useApp();
+  const { settings, language, setLanguage, currency, setCurrency, tl, t, activeRestaurant } = useApp();
 
   const showCurrency = settings.show_currency_selector !== '0';
   const showLang = settings.show_language_selector !== '0';
@@ -56,13 +56,6 @@ export default function Navbar({ onSearch, search }) {
               ))}
             </select>
           )}
-          <button
-            onClick={toggleTheme}
-            className="grid h-9 w-9 place-items-center rounded-lg border border-line bg-surface text-base"
-            aria-label="Toggle theme"
-          >
-            {theme === 'dark' ? '☀️' : '🌙'}
-          </button>
         </div>
       </div>
 

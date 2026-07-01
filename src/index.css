@@ -1,30 +1,14 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
-
 /* Driver Game Center theme tokens.
-   Light (default :root) is a clean bright palette with violet/teal neon accents;
-   dark ([data-theme="dark"]) is the full neon club look. */
+   Single deep-dark neon club palette with violet/teal neon accents. */
 :root {
-  --bg: #f3f2fb;
-  --surface: #ffffff;
-  --surface-2: #ece9f9;
-  --text: #16142c;
-  --muted: #605c80;
-  --border: #e2def3;
-  --accent: #7c3aed;
-  --accent-ink: #ffffff;
-  --neon: #0891b2;
-  --neon-2: #db2777;
-}
-
-[data-theme="dark"] {
-  --bg: #050509;
-  --surface: #100e22;
-  --surface-2: #181534;
+  --bg: #030308;
+  --surface: #0b0a18;
+  --surface-2: #120f28;
   --text: #f3f5ff;
-  --muted: #8b91bd;
-  --border: #241f48;
+  --muted: #7d83b0;
+  --border: #1b1738;
   --accent: #7c3aed;
   --accent-ink: #ffffff;
   --neon: #00e5ff;

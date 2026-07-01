@@ -69,7 +69,6 @@ export default function AdminPage() {
 }
 
 function AdminPanel() {
-  const { theme, toggleTheme } = useApp();
   const { lang: adminLang, setLang: setAdminLang, t } = useAdminLang();
   const [pw, setPw] = useState(() => sessionStorage.getItem('admin_pw') || '');
   const [authed, setAuthed] = useState(false);
@@ -172,7 +171,6 @@ function AdminPanel() {
             >
               {adminLang.toUpperCase()}
             </button>
-            <button onClick={toggleTheme} className="grid h-9 w-9 place-items-center rounded-lg border border-line bg-bg">{theme === 'dark' ? '☀️' : '🌙'}</button>
             <a href="/" className="rounded-lg border border-line bg-bg px-3 py-2 text-sm text-ink">{t.viewMenu}</a>
             <button onClick={logout} className="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-accent-ink">{t.logout}</button>
           </div>
