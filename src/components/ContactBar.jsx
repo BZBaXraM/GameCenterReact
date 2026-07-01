@@ -76,13 +76,6 @@ export default function ContactBar() {
       : `https://instagram.com/${igRaw.replace(/^@/, '')}`
     : '';
 
-  let hours = {};
-  try { hours = JSON.parse(settings.opening_hours || '{}'); } catch { /* ignore */ }
-  const days = Object.entries(hours);
-
-  const hasAny = settings.phone || wa || igHref || settings.wifi_name || days.length > 0;
-  if (!hasAny) return null;
-
   const toggle = (key) => setPopover((p) => (p === key ? null : key));
 
   return (
@@ -100,9 +93,7 @@ export default function ContactBar() {
         {settings.wifi_name && (
           <BarButton name="wifi" label="Wi-Fi" onClick={() => toggle('wifi')} active={popover === 'wifi'} />
         )}
-        {days.length > 0 && (
-          <BarButton name="clock" label={t.hours} onClick={() => toggle('hours')} active={popover === 'hours'} />
-        )}
+        <BarButton name="clock" label={t.hours} onClick={() => toggle('hours')} active={popover === 'hours'} />
       </div>
 
       {popover === 'wifi' && (
@@ -118,14 +109,8 @@ export default function ContactBar() {
       {popover === 'hours' && (
         <div className="absolute left-1/2 top-full z-30 mt-2 w-64 max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-2xl border border-line bg-surface p-4 text-left shadow-xl">
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">{t.hours}</h3>
-          <ul className="space-y-1 text-sm text-ink">
-            {days.map(([day, time]) => (
-              <li key={day} className="flex justify-between gap-4">
-                <span className="capitalize text-muted">{day}</span>
-                <span>{time}</span>
-              </li>
-            ))}
-          </ul>
+          <p className="text-sm text-ink">{t.hoursLine1}</p>
+          <p className="text-sm text-ink">{t.hoursLine2}</p>
         </div>
       )}
     </div>

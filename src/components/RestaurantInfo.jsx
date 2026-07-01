@@ -4,19 +4,15 @@ import { assetUrl } from '../api.js';
 export default function RestaurantInfo() {
   const { settings, tl, t, activeRestaurant, apiBase } = useApp();
 
-  let hours = {};
-  try { hours = JSON.parse(settings.opening_hours || '{}'); } catch { /* ignore */ }
-  const days = Object.entries(hours);
-
   return (
     <footer id="contact" className="mt-10 border-t border-line bg-surface">
       <div className="mx-auto grid max-w-5xl gap-6 px-4 py-8 sm:grid-cols-3">
         <div id="about">
           <div className="mb-2 flex items-center gap-2 font-display text-lg font-semibold text-ink">
             <img
-              src={assetUrl(settings.logo_image || activeRestaurant?.logo || `${import.meta.env.BASE_URL}driver-game-center-logo.svg`, apiBase)}
+              src={assetUrl(settings.logo_image || activeRestaurant?.logo || `${import.meta.env.BASE_URL}driver-game-center-logo.jpeg`, apiBase)}
               alt=""
-              className="h-8 w-8 rounded-full object-cover"
+              className="h-10 w-10 rounded-full object-cover"
             />
             {tl(settings.restaurant_name) || activeRestaurant?.name || 'Menyu QR'}
           </div>
@@ -24,19 +20,11 @@ export default function RestaurantInfo() {
           {settings.address && <p className="mt-3 text-sm text-muted">📍 {settings.address}</p>}
         </div>
 
-        {days.length > 0 && (
-          <div>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">{t.hours}</h3>
-            <ul className="space-y-1 text-sm text-ink">
-              {days.map(([day, time]) => (
-                <li key={day} className="flex justify-between gap-4">
-                  <span className="capitalize text-muted">{day}</span>
-                  <span>{time}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <div>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">{t.hours}</h3>
+          <p className="text-sm text-ink">{t.hoursLine1}</p>
+          <p className="text-sm text-ink">{t.hoursLine2}</p>
+        </div>
 
         <div className="space-y-2 text-sm text-ink">
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">{t.contact}</h3>

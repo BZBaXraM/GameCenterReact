@@ -80,9 +80,9 @@ export default function MenuPage() {
       <main className="mx-auto max-w-5xl px-4 pb-12">
         <section className="py-6 text-center">
           <img
-            src={assetUrl(settings.logo_image || activeRestaurant?.logo || `${import.meta.env.BASE_URL}driver-game-center-logo.svg`, activeRestaurant?.apiBase)}
+            src={assetUrl(settings.logo_image || activeRestaurant?.logo || `${import.meta.env.BASE_URL}driver-game-center-logo.jpeg`, activeRestaurant?.apiBase)}
             alt=""
-            className="mx-auto mb-3 h-16 w-16 rounded-full object-cover neon-glow"
+            className="mx-auto mb-3 h-20 w-20 rounded-full object-cover neon-glow"
           />
           <h1 className="font-display text-4xl font-bold tracking-tight text-ink sm:text-5xl">
             {tl(settings.restaurant_name) || 'Driver Game Center'}

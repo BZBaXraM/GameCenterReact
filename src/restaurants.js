@@ -11,7 +11,7 @@ export const restaurants = [
     name: 'Driver Game Center',
     category: 'Oyun klubu',
     description: 'Simulyasiya, yarış və oyun klubu.',
-    logo: `${import.meta.env.BASE_URL}driver-game-center-logo.svg`,
+    logo: `${import.meta.env.BASE_URL}driver-game-center-logo.jpeg`,
     accentColor: '#7C3AED',
     apiBase: API_BASE,
     tags: ['Oyun klubu', 'Kabinetlər', 'Qəlyan'],

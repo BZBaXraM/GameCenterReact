@@ -13,9 +13,9 @@ export default function Navbar({ onSearch, search }) {
       <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <img
-            src={assetUrl(settings.logo_image || activeRestaurant?.logo || `${import.meta.env.BASE_URL}driver-game-center-logo.svg`, activeRestaurant?.apiBase)}
+            src={assetUrl(settings.logo_image || activeRestaurant?.logo || `${import.meta.env.BASE_URL}driver-game-center-logo.jpeg`, activeRestaurant?.apiBase)}
             alt=""
-            className="h-9 w-9 shrink-0 rounded-full object-cover"
+            className="h-11 w-11 shrink-0 rounded-full object-cover"
           />
           <div className="min-w-0 leading-tight">
             <div className="truncate font-display text-lg font-semibold text-ink">
