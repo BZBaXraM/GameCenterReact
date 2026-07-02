@@ -29,7 +29,32 @@ export default function RestaurantInfo() {
         <div className="space-y-2 text-sm text-ink">
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">{t.contact}</h3>
           {settings.phone && <p>📞 {settings.phone}</p>}
-          {settings.instagram && <p>📸 {settings.instagram}</p>}
+          {settings.instagram && (
+            <p>
+              📸{' '}
+              <a
+                href={`https://instagram.com/${settings.instagram.trim().replace(/^@/, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent hover:underline"
+              >
+                {settings.instagram}
+              </a>
+            </p>
+          )}
+          {settings.tiktok && (
+            <p>
+              🎵{' '}
+              <a
+                href={`https://www.tiktok.com/@${settings.tiktok.trim().replace(/^@/, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent hover:underline"
+              >
+                {settings.tiktok}
+              </a>
+            </p>
+          )}
           {settings.wifi_name && (
             <p className="text-muted">
               📶 {t.wifi}: <span className="text-ink">{settings.wifi_name}</span>

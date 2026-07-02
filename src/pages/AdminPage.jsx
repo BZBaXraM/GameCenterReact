@@ -876,6 +876,7 @@ function SettingsTab({ headers }) {
       <div className="grid grid-cols-2 gap-3">
         <Field label={t.phone} value={s.phone || ''} onChange={(e) => set('phone', e.target.value)} />
         <Field label={t.instagram} value={s.instagram || ''} onChange={(e) => set('instagram', e.target.value)} />
+        <Field label={t.tiktok} value={s.tiktok || ''} onChange={(e) => set('tiktok', e.target.value)} />
         <Field label={t.wifiName} value={s.wifi_name || ''} onChange={(e) => set('wifi_name', e.target.value)} />
         <Field label={t.wifiPassword} value={s.wifi_password || ''} onChange={(e) => set('wifi_password', e.target.value)} />
         <Field label={t.address} value={s.address || ''} onChange={(e) => set('address', e.target.value)} />
