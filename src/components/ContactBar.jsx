@@ -16,6 +16,9 @@ const icons = {
       <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
     </>
   ),
+  tiktok: (
+    <path d="M16 3c.3 2.2 1.6 3.9 3.8 4.2v2.7c-1.4.1-2.7-.3-3.8-1v5.6c0 3.4-2.7 5.8-5.8 5.5-2.8-.2-4.9-2.5-4.8-5.3.1-2.7 2.3-4.9 5-4.9.3 0 .6 0 .9.1v2.8c-.3-.1-.6-.2-.9-.2-1.3 0-2.3 1-2.3 2.3s1 2.3 2.3 2.3 2.3-1 2.3-2.3V3H16z" />
+  ),
   wifi: (
     <>
       <path d="M2.5 9a16 16 0 0 1 19 0" />
@@ -75,6 +78,12 @@ export default function ContactBar() {
       ? igRaw
       : `https://instagram.com/${igRaw.replace(/^@/, '')}`
     : '';
+  const ttRaw = (settings.tiktok || '').trim();
+  const ttHref = ttRaw
+    ? ttRaw.startsWith('http')
+      ? ttRaw
+      : `https://tiktok.com/@${ttRaw.replace(/^@/, '')}`
+    : '';
 
   const toggle = (key) => setPopover((p) => (p === key ? null : key));
 
@@ -89,6 +98,9 @@ export default function ContactBar() {
         )}
         {igHref && (
           <BarButton name="instagram" label="Instagram" href={igHref} />
+        )}
+        {ttHref && (
+          <BarButton name="tiktok" label="TikTok" href={ttHref} />
         )}
         {settings.wifi_name && (
           <BarButton name="wifi" label="Wi-Fi" onClick={() => toggle('wifi')} active={popover === 'wifi'} />
