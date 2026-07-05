@@ -171,7 +171,7 @@ function AdminPanel() {
             >
               {adminLang.toUpperCase()}
             </button>
-            <a href="/" className="rounded-lg border border-line bg-bg px-3 py-2 text-sm text-ink">{t.viewMenu}</a>
+            <a href={import.meta.env.BASE_URL} className="rounded-lg border border-line bg-bg px-3 py-2 text-sm text-ink">{t.viewMenu}</a>
             <button onClick={logout} className="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-accent-ink">{t.logout}</button>
           </div>
         </div>

@@ -19,6 +19,21 @@ The app talks to the shared `qr-menu` backend under the **`/api/dgc`** namespace
 (see `src/api.js`). `API_BASE` defaults to `http://localhost:3000` and is
 overridden in production with `VITE_API_BASE` (the DGC API host).
 
+## Deploy
+
+The app is built with Vite `base: '/driver-game-center/'` (see `vite.config.js`)
+and served at `menyuqr.com/driver-game-center` by the **MenyuQR / Coffee-menu-API**
+Express backend — the build output is bundled into that repo under
+`public/driver-game-center/`. From the Coffee-menu-API repo, run:
+
+```bash
+bun run game-center:build   # or: node scripts/build-game-center.mjs
+```
+
+which rebuilds this app and copies `dist/` into `public/driver-game-center/`; then
+redeploy the API image as usual. The standalone `Dockerfile`/`nginx.conf` here now
+only 301-redirect the legacy `game-center.bahram.site` subdomain to the new URL.
+
 ## What's different from the coffee app
 
 - **Cabinets** (`CabinetsPanel`) — private rooms with a live, WebSocket-driven
