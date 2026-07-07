@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useApp } from '../context/AppContext.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import { assetUrl } from '../api.js';
@@ -6,38 +6,49 @@ import { assetUrl } from '../api.js';
 export default function CartDrawer({ open, onClose }) {
   const { tl, formatPrice, convertPrice, currency, settings, t, apiUrl, apiBase } = useApp();
   const { items, updateQty, remove, clear, totalAZN } = useCart();
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState(null); // 'ok' | 'error' | null
 
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
   const table = params.get('table');
   const cabinet = params.get('cabinet');
 
   const submitOrder = async () => {
-    if (!items.length) return;
-    const lines = items.map((i) => `• ${tl(i.name)}${i.size ? ` (${i.size})` : ''} ×${i.qty} — ${formatPrice(i.price * i.qty)}`);
-    const totalStr = formatPrice(totalAZN);
-    const header = tl(settings.restaurant_name) || 'Driver Game Center';
-    const whereStr = cabinet ? `\n${t.cabinets}: #${cabinet}` : (table ? `\n${t.table}: #${table}` : '');
-    const text = `🎮 ${header}${whereStr}\n\n${t.yourOrder}:\n${lines.join('\n')}\n\n${t.total}: ${totalStr}`;
+    if (!items.length || submitting) return;
+    setSubmitting(true);
+    setResult(null);
 
-    // Persist the order (best effort)
-    if (apiUrl) {
-      try {
-        await fetch(`${apiUrl}/orders`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            items: items.map((i) => ({ id: i.id, name: tl(i.name), size: i.size || null, qty: i.qty, price: convertPrice(i.price) })),
-            total: convertPrice(totalAZN),
-            currency,
-            table_number: table || null,
-            cabinet_id: cabinet ? Number(cabinet) : null,
-          }),
-        });
-      } catch { /* ignore — still open WhatsApp */ }
+    // WhatsApp order removed — orders now go straight to the admin panel below.
+    // const lines = items.map((i) => `• ${tl(i.name)}${i.size ? ` (${i.size})` : ''} ×${i.qty} — ${formatPrice(i.price * i.qty)}`);
+    // const totalStr = formatPrice(totalAZN);
+    // const header = tl(settings.restaurant_name) || 'Driver Game Center';
+    // const whereStr = cabinet ? `\n${t.cabinets}: #${cabinet}` : (table ? `\n${t.table}: #${table}` : '');
+    // const text = `🎮 ${header}${whereStr}\n\n${t.yourOrder}:\n${lines.join('\n')}\n\n${t.total}: ${totalStr}`;
+
+    try {
+      const res = await fetch(`${apiUrl}/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: items.map((i) => ({ id: i.id, name: tl(i.name), size: i.size || null, qty: i.qty, price: convertPrice(i.price) })),
+          total: convertPrice(totalAZN),
+          currency,
+          table_number: table || null,
+          cabinet_id: cabinet ? Number(cabinet) : null,
+        }),
+      });
+      if (!res.ok) throw new Error('request failed');
+      setResult('ok');
+      clear();
+      setTimeout(() => { setResult(null); onClose(); }, 1500);
+    } catch {
+      setResult('error');
+    } finally {
+      setSubmitting(false);
     }
 
-    const phone = (settings.whatsapp_number || '').replace(/[^\d]/g, '');
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
+    // const phone = (settings.whatsapp_number || '').replace(/[^\d]/g, '');
+    // window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
   if (!open) return null;
@@ -110,11 +121,16 @@ export default function CartDrawer({ open, onClose }) {
             >
               🗑 {t.clearCart}
             </button>
+            {result === 'error' && (
+              <p className="mb-2 text-center text-sm font-medium text-red-600">{t.orderFailed}</p>
+            )}
             <button
               onClick={submitOrder}
-              className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#25D366] to-[#1da851] py-4 text-lg font-semibold text-white shadow-lg transition active:scale-[0.99]"
+              disabled={submitting}
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-accent py-4 text-lg font-semibold text-accent-ink shadow-lg transition active:scale-[0.99] disabled:opacity-60"
             >
-              <span className="text-xl">💬</span> {t.orderViaWhatsapp}
+              <span className="text-xl">{result === 'ok' ? '✅' : '🛎️'}</span>
+              {result === 'ok' ? t.orderPlaced : t.orderViaWhatsapp}
             </button>
           </div>
         )}
