@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { toast } from 'react-toastify';
 import { useApp } from '../context/AppContext.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import { assetUrl } from '../api.js';
@@ -39,10 +40,12 @@ export default function CartDrawer({ open, onClose }) {
       });
       if (!res.ok) throw new Error('request failed');
       setResult('ok');
+      toast.success(t.orderPlaced);
       clear();
       setTimeout(() => { setResult(null); onClose(); }, 1500);
     } catch {
       setResult('error');
+      toast.error(t.orderFailed);
     } finally {
       setSubmitting(false);
     }
