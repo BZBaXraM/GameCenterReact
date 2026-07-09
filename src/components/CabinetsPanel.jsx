@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext.jsx';
 import { wsUrl } from '../api.js';
 
-function fmtDuration(mins) {
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+function fmtDuration(secs) {
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  return h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`;
 }
 
 // Live cabinet board. Shows each cabinet's open/closed status and, for open
@@ -41,17 +42,19 @@ export default function CabinetsPanel({ highlightId }) {
     return () => ws && ws.close();
   }, [apiBase]);
 
-  // Re-render every 30s so open timers tick up.
+  // Re-render every second so open timers tick with seconds.
+  const anyOpen = cabinets.some((c) => c.status === 'open');
   useEffect(() => {
-    const id = setInterval(() => force((n) => n + 1), 30000);
+    if (!anyOpen) return;
+    const id = setInterval(() => force((n) => n + 1), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [anyOpen]);
 
   if (!cabinets.length) return null;
 
   const elapsedOf = (c) => {
     if (c.status !== 'open' || !c.opened_at) return 0;
-    return Math.max(0, Math.round((Date.now() - new Date(c.opened_at).getTime()) / 60000));
+    return Math.max(0, Math.floor((Date.now() - new Date(c.opened_at).getTime()) / 1000));
   };
 
   return (
@@ -80,7 +83,7 @@ export default function CabinetsPanel({ highlightId }) {
               </div>
               {open && (
                 <div className="mt-2 rounded-lg bg-bg/60 px-2 py-1.5 text-[11px]">
-                  <div className="flex justify-between"><span className="text-muted">{t.elapsed}</span><span className="font-semibold text-ink">{fmtDuration(elapsed)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted">{t.elapsed}</span><span className="font-semibold tabular-nums text-ink">{fmtDuration(elapsed)}</span></div>
                   <div className="flex justify-between"><span className="text-muted">{t.runningCost}</span><span className="neon-text font-semibold">{formatPrice(c.running_cost ?? 0)}</span></div>
                 </div>
               )}

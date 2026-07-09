@@ -962,12 +962,33 @@ function fmtMins(mins) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
+function fmtSecs(secs) {
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  return h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`;
+}
+
+function elapsedSecs(c) {
+  if (c.status !== 'open' || !c.opened_at) return 0;
+  return Math.max(0, Math.floor((Date.now() - new Date(c.opened_at).getTime()) / 1000));
+}
+
 function CabinetsTab({ headers }) {
   const { t, lang } = useAdminLang();
   const [items, setItems] = useState([]);
   const [editing, setEditing] = useState(null);
   const [sessionsFor, setSessionsFor] = useState(null);
   const [sessions, setSessions] = useState([]);
+  const [, force] = useState(0);
+
+  // Tick every second so open cabinet timers show live seconds.
+  const anyOpen = items.some((c) => c.status === 'open');
+  useEffect(() => {
+    if (!anyOpen) return;
+    const id = setInterval(() => force((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, [anyOpen]);
 
   const load = useCallback(() => fetch(`${API_URL}/admin/cabinets`, { headers: headers() }).then((r) => r.json()).then((d) => setItems(Array.isArray(d) ? d : [])), [headers]);
   useEffect(() => { load(); }, [load]);
@@ -1035,7 +1056,7 @@ function CabinetsTab({ headers }) {
               <div className="mt-1 text-xs text-muted">👥 {c.capacity} · {c.hourly_rate} AZN{t.perHour || '/hour'}</div>
               {open && (
                 <div className="mt-2 rounded-lg bg-surface-2 px-2 py-1.5 text-[11px]">
-                  <div className="flex justify-between"><span className="text-muted">{t.elapsed || 'Elapsed'}</span><span className="font-semibold text-ink">{fmtMins(c.elapsed_minutes || 0)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted">{t.elapsed || 'Elapsed'}</span><span className="font-semibold tabular-nums text-ink">{fmtSecs(elapsedSecs(c))}</span></div>
                   <div className="flex justify-between"><span className="text-muted">{t.runningCost || 'Running cost'}</span><span className="font-semibold text-accent">{c.running_cost ?? 0} AZN</span></div>
                 </div>
               )}
