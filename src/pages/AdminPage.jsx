@@ -59,6 +59,46 @@ function Field({ label, ...props }) {
   );
 }
 
+// Upload FormData via XHR — fetch has no upload-progress events, so photo
+// uploads go through this to drive the progress bar.
+function sendForm(url, method, headers, fd, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(method, url);
+    Object.entries(headers || {}).forEach(([k, v]) => xhr.setRequestHeader(k, v));
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100)); };
+    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve(xhr.responseText) : reject(new Error(`HTTP ${xhr.status}`)));
+    xhr.onerror = () => reject(new Error('Network error'));
+    xhr.send(fd);
+  });
+}
+
+function useUpload() {
+  const [pct, setPct] = useState(null);
+  const send = useCallback(async (url, method, headers, fd) => {
+    setPct(0);
+    try { return await sendForm(url, method, headers, fd, setPct); }
+    finally { setPct(null); }
+  }, []);
+  return { pct, send };
+}
+
+function UploadBar({ pct }) {
+  const { t } = useAdminLang();
+  if (pct == null) return null;
+  return (
+    <div className="fixed inset-x-4 bottom-4 z-[70] mx-auto max-w-xs rounded-xl border border-line bg-surface p-3 shadow-xl">
+      <div className="mb-1 flex justify-between text-xs text-ink">
+        <span>📷 {t.uploading || 'Uploading…'}</span>
+        <span className="font-semibold tabular-nums">{pct}%</span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-surface-2">
+        <div className="h-full rounded-full bg-accent transition-[width] duration-150" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
 // ---------- main ----------
 export default function AdminPage() {
   return (
@@ -210,6 +250,7 @@ function DishesTab({ headers }) {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [editing, setEditing] = useState(null);
+  const { pct, send } = useUpload();
 
   const load = useCallback(() => {
     fetch(`${API_URL}/admin/items?page=${page}&limit=20`, { headers: headers() })
@@ -239,7 +280,8 @@ function DishesTab({ headers }) {
     else fd.append('image', form.image ?? '');
     const method = form.id ? 'PUT' : 'POST';
     const url = form.id ? `${API_URL}/admin/items/${form.id}` : `${API_URL}/admin/items`;
-    await fetch(url, { method, headers: headers(), body: fd });
+    if (file) await send(url, method, headers(), fd);
+    else await fetch(url, { method, headers: headers(), body: fd });
     setEditing(null); load();
   };
 
@@ -272,6 +314,7 @@ function DishesTab({ headers }) {
       </div>
       <Pagination page={page} totalPages={totalPages} onChange={setPage} />
 
+      <UploadBar pct={pct} />
       {editing && <DishForm form={editing} cats={cats} onCancel={() => setEditing(null)} onSave={save} />}
     </div>
   );
@@ -415,6 +458,7 @@ function CategoriesTab({ headers }) {
   const { t, lang } = useAdminLang();
   const [items, setItems] = useState([]);
   const [editing, setEditing] = useState(null);
+  const { pct, send } = useUpload();
 
   const load = useCallback(() => fetch(`${API_URL}/admin/categories`, { headers: headers() }).then((r) => r.json()).then(setItems), [headers]);
   useEffect(() => { load(); }, [load]);
@@ -436,7 +480,8 @@ function CategoriesTab({ headers }) {
     }
     const method = form.id ? 'PUT' : 'POST';
     const url = form.id ? `${API_URL}/admin/categories/${form.id}` : `${API_URL}/admin/categories`;
-    await fetch(url, { method, headers: headers(), body: fd });
+    if (form.icon_type === 'image' && file) await send(url, method, headers(), fd);
+    else await fetch(url, { method, headers: headers(), body: fd });
     setEditing(null); load();
   };
   const del = async (id) => { if (confirm(t.confirmDeleteCategory)) { await fetch(`${API_URL}/admin/categories/${id}`, { method: 'DELETE', headers: headers() }); load(); } };
@@ -458,6 +503,7 @@ function CategoriesTab({ headers }) {
           </div>
         ))}
       </div>
+      <UploadBar pct={pct} />
       {editing && <CategoryForm form={editing} onCancel={() => setEditing(null)} onSave={save} />}
     </div>
   );
@@ -974,6 +1020,16 @@ function elapsedSecs(c) {
   return Math.max(0, Math.floor((Date.now() - new Date(c.opened_at).getTime()) / 1000));
 }
 
+// Billing matches the backend estimateCost: hours rounded up to the next
+// started hour, minimum one hour.
+function billedHours(c) {
+  return Math.max(1, Math.ceil(elapsedSecs(c) / 3600));
+}
+
+function dueOf(c) {
+  return +(billedHours(c) * (c.hourly_rate || 0)).toFixed(2);
+}
+
 function CabinetsTab({ headers }) {
   const { t, lang } = useAdminLang();
   const [items, setItems] = useState([]);
@@ -981,6 +1037,7 @@ function CabinetsTab({ headers }) {
   const [sessionsFor, setSessionsFor] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [, force] = useState(0);
+  const { pct, send } = useUpload();
 
   // Tick every second so open cabinet timers show live seconds.
   const anyOpen = items.some((c) => c.status === 'open');
@@ -1026,11 +1083,12 @@ function CabinetsTab({ headers }) {
     else fd.append('image', form.image ?? '');
     const method = form.id ? 'PUT' : 'POST';
     const url = form.id ? `${API_URL}/admin/cabinets/${form.id}` : `${API_URL}/admin/cabinets`;
-    await fetch(url, { method, headers: headers(), body: fd });
+    if (file) await send(url, method, headers(), fd);
+    else await fetch(url, { method, headers: headers(), body: fd });
     setEditing(null); load();
   };
 
-  const del = async (id) => { if (confirm('Delete this cabinet?')) { await fetch(`${API_URL}/admin/cabinets/${id}`, { method: 'DELETE', headers: headers() }); load(); } };
+  const del = async (id) => { if (confirm(t.confirmDeleteCabinet || 'Delete this cabinet?')) { await fetch(`${API_URL}/admin/cabinets/${id}`, { method: 'DELETE', headers: headers() }); load(); } };
 
   const viewSessions = async (cab) => {
     setSessionsFor(cab);
@@ -1057,7 +1115,7 @@ function CabinetsTab({ headers }) {
               {open && (
                 <div className="mt-2 rounded-lg bg-surface-2 px-2 py-1.5 text-[11px]">
                   <div className="flex justify-between"><span className="text-muted">{t.elapsed || 'Elapsed'}</span><span className="font-semibold tabular-nums text-ink">{fmtSecs(elapsedSecs(c))}</span></div>
-                  <div className="flex justify-between"><span className="text-muted">{t.runningCost || 'Running cost'}</span><span className="font-semibold text-accent">{c.running_cost ?? 0} AZN</span></div>
+                  <div className="flex justify-between"><span className="text-muted">{t.runningCost || 'Running cost'}</span><span className="font-semibold tabular-nums text-accent">{dueOf(c)} AZN</span></div>
                 </div>
               )}
               <div className="mt-3 flex flex-wrap gap-2">
@@ -1068,11 +1126,18 @@ function CabinetsTab({ headers }) {
                 <button onClick={() => setEditing({ ...c, name: parseML(c.name), description: parseML(c.description) })} className="rounded-lg border border-line px-2 py-2 text-xs text-ink">{t.edit}</button>
                 <button onClick={() => del(c.id)} className="rounded-lg border border-line px-2 py-2 text-xs text-red-500">{t.del}</button>
               </div>
+              {open && (
+                <div className="mt-2 flex items-center justify-between rounded-lg bg-accent/10 px-2 py-1.5 text-xs">
+                  <span className="text-muted">{t.totalDue || 'Total due'} · {billedHours(c)}h × {c.hourly_rate} AZN</span>
+                  <span className="font-bold tabular-nums text-accent">{dueOf(c)} AZN</span>
+                </div>
+              )}
             </div>
           );
         })}
       </div>
 
+      <UploadBar pct={pct} />
       {editing && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={() => setEditing(null)}>
           <CabinetForm form={editing} onCancel={() => setEditing(null)} onSave={save} />
@@ -1114,7 +1179,7 @@ function CabinetForm({ form: initial, onCancel, onSave }) {
       <MultiLang label={t.description} value={form.description} onChange={(v) => set('description', v)} textarea />
       <div className="grid grid-cols-2 gap-3">
         <Field label={t.capacity || 'Capacity'} type="number" value={form.capacity} onChange={(e) => set('capacity', e.target.value)} />
-        <Field label={`${t.runningCost || 'Hourly rate'} (AZN)`} type="number" step="0.5" value={form.hourly_rate} onChange={(e) => set('hourly_rate', e.target.value)} />
+        <Field label={`${t.hourlyRate || 'Hourly rate'} (AZN)`} type="number" step="0.5" value={form.hourly_rate} onChange={(e) => set('hourly_rate', e.target.value)} />
         <Field label={t.sortOrder} type="number" value={form.sort_order} onChange={(e) => set('sort_order', e.target.value)} />
       </div>
       <label className="flex items-center gap-2 text-sm text-ink"><input type="checkbox" checked={!!Number(form.is_active)} onChange={(e) => set('is_active', e.target.checked ? 1 : 0)} /> {t.available}</label>
