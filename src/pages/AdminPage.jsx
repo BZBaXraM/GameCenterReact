@@ -956,12 +956,11 @@ function PaymentsTab({ headers, onUnpaidCount }) {
     return () => ws?.close();
   }, [load, showToast, t, lang]);
 
-  const setPaid = async (p, paid) => {
-    const question = paid ? t.confirmMarkPaid : t.confirmMarkUnpaid;
-    if (!confirm(`${question}\n${monthLabel(p.period, lang)} — ${p.amount} ${p.currency}`)) return;
+  const setPaid = async (p) => {
+    if (!confirm(`${t.confirmMarkPaid}\n${monthLabel(p.period, lang)} — ${p.amount} ${p.currency}`)) return;
     setBusy(p.period);
     try {
-      await fetch(`${API_URL}/admin/payments/${p.period}/${paid ? 'pay' : 'unpay'}`, { method: 'POST', headers: headers() });
+      await fetch(`${API_URL}/admin/payments/${p.period}/pay`, { method: 'POST', headers: headers() });
       await load();
     } finally { setBusy(null); }
   };
@@ -969,7 +968,6 @@ function PaymentsTab({ headers, onUnpaidCount }) {
   if (!data) return <p className="text-muted">{t.loading}</p>;
   const { payments = [], summary = {} } = data;
   const owed = (summary.unpaidCount || 0) > 0;
-  const currentPeriod = payments[0]?.period; // list comes newest-first
 
   return (
     <div className="max-w-2xl">
@@ -1011,13 +1009,8 @@ function PaymentsTab({ headers, onUnpaidCount }) {
                   {paid ? `✓ ${t.paymentPaid}` : t.paymentUnpaid}
                 </span>
                 {!paid && (
-                  <button onClick={() => setPaid(p, true)} disabled={busy === p.period} className="rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-accent-ink disabled:opacity-50">
+                  <button onClick={() => setPaid(p)} disabled={busy === p.period} className="rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-accent-ink disabled:opacity-50">
                     {t.markPaid}
-                  </button>
-                )}
-                {paid && p.period === currentPeriod && (
-                  <button onClick={() => setPaid(p, false)} disabled={busy === p.period} className="rounded-lg border border-line px-2 py-2 text-[11px] text-muted hover:text-ink disabled:opacity-50">
-                    {t.markUnpaid}
                   </button>
                 )}
               </div>
