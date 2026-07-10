@@ -115,8 +115,9 @@ function AdminPanel() {
   const [checking, setChecking] = useState(true);
   const [loginInput, setLoginInput] = useState('');
   const [showPw, setShowPw] = useState(false);
-  const [tab, setTab] = useState('dishes');
+  const [tab, setTab] = useState('payments');
   const [error, setError] = useState('');
+  const [unpaidCount, setUnpaidCount] = useState(0);
 
   const headers = useCallback((json) => ({
     ...(json ? { 'Content-Type': 'application/json' } : {}),
@@ -153,6 +154,29 @@ function AdminPanel() {
     setPw(''); setAuthed(false); setLoginInput('');
   };
 
+  // Unpaid developer-payment badge on the Payments tab button, kept live via
+  // the shared /dgc/ws channel so it updates even while on other tabs.
+  useEffect(() => {
+    if (!authed) return;
+    const refresh = () =>
+      fetch(`${API_URL}/admin/payments`, { headers: headers() })
+        .then((r) => r.json())
+        .then((d) => setUnpaidCount(d.summary?.unpaidCount || 0))
+        .catch(() => { /* ignore */ });
+    refresh();
+    let ws;
+    try {
+      ws = new WebSocket(wsUrl('/dgc/ws'));
+      ws.onmessage = (ev) => {
+        try {
+          const msg = JSON.parse(ev.data);
+          if (msg.type === 'payment_due' || msg.type === 'payment_update') refresh();
+        } catch { /* ignore */ }
+      };
+    } catch { /* ignore */ }
+    return () => ws?.close();
+  }, [authed, headers]);
+
   if (checking) return null;
 
   if (!authed) {
@@ -185,6 +209,7 @@ function AdminPanel() {
   }
 
   const tabs = [
+    ['payments', t.tabPayments || '💳 Billing'],
     ['dishes', t.tabDishes],
     ['categories', t.tabCategories],
     ['cabinets', t.tabCabinets || 'Cabinets'],
@@ -223,12 +248,16 @@ function AdminPanel() {
               className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium ${tab === id ? 'bg-accent text-accent-ink' : 'text-muted hover:bg-bg'}`}
             >
               {label}
+              {id === 'payments' && unpaidCount > 0 && (
+                <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 align-middle text-[10px] font-bold text-white">{unpaidCount}</span>
+              )}
             </button>
           ))}
         </div>
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-6">
+        {tab === 'payments' && <PaymentsTab headers={headers} onUnpaidCount={setUnpaidCount} />}
         {tab === 'dishes' && <DishesTab headers={headers} />}
         {tab === 'categories' && <CategoriesTab headers={headers} />}
         {tab === 'cabinets' && <CabinetsTab headers={headers} />}
@@ -876,6 +905,141 @@ function OrdersTab({ headers }) {
   );
 }
 
+// ---------- Developer payments ----------
+const MONTH_LOCALES = { ru: 'ru-RU', en: 'en-US', az: 'az-AZ', tr: 'tr-TR' };
+
+function monthLabel(period, lang) {
+  const label = new Date(`${period}-01T00:00:00`).toLocaleDateString(MONTH_LOCALES[lang] || 'en-US', { month: 'long', year: 'numeric' });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function PaymentsTab({ headers, onUnpaidCount }) {
+  const { t, lang } = useAdminLang();
+  const [data, setData] = useState(null);
+  const [busy, setBusy] = useState(null);
+  const [toast, setToast] = useState(null);
+  const toastTimer = useRef();
+
+  const load = useCallback(() => {
+    fetch(`${API_URL}/admin/payments`, { headers: headers() })
+      .then((r) => r.json())
+      .then((d) => { setData(d); onUnpaidCount?.(d.summary?.unpaidCount || 0); })
+      .catch(() => { /* ignore */ });
+  }, [headers, onUnpaidCount]);
+  useEffect(() => { load(); }, [load]);
+
+  const showToast = useCallback((msg) => {
+    setToast(msg);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 6000);
+  }, []);
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
+
+  // Live ledger updates: a new unpaid month or a status change from another
+  // window shows up without a reload.
+  useEffect(() => {
+    let ws;
+    try {
+      ws = new WebSocket(wsUrl('/dgc/ws'));
+      ws.onmessage = (ev) => {
+        try {
+          const msg = JSON.parse(ev.data);
+          if (msg.type === 'payment_due') {
+            showToast(`${t.paymentDueToast} — ${monthLabel(msg.payment?.period || '', lang)}`);
+            load();
+          } else if (msg.type === 'payment_update') {
+            load();
+          }
+        } catch { /* ignore */ }
+      };
+    } catch { /* ignore */ }
+    return () => ws?.close();
+  }, [load, showToast, t, lang]);
+
+  const setPaid = async (p, paid) => {
+    const question = paid ? t.confirmMarkPaid : t.confirmMarkUnpaid;
+    if (!confirm(`${question}\n${monthLabel(p.period, lang)} — ${p.amount} ${p.currency}`)) return;
+    setBusy(p.period);
+    try {
+      await fetch(`${API_URL}/admin/payments/${p.period}/${paid ? 'pay' : 'unpay'}`, { method: 'POST', headers: headers() });
+      await load();
+    } finally { setBusy(null); }
+  };
+
+  if (!data) return <p className="text-muted">{t.loading}</p>;
+  const { payments = [], summary = {} } = data;
+  const owed = (summary.unpaidCount || 0) > 0;
+  const currentPeriod = payments[0]?.period; // list comes newest-first
+
+  return (
+    <div className="max-w-2xl">
+      <h2 className="mb-4 font-display text-xl font-bold text-ink">💳 {t.paymentsTitle}</h2>
+
+      {/* summary */}
+      <div className={`mb-4 rounded-2xl border p-4 ${owed ? 'border-red-500/50 bg-red-500/5' : 'neon-border bg-surface'}`}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="font-display text-base font-bold text-ink">{t.developerPayment}</div>
+            <div className="mt-0.5 text-sm text-muted">{t.monthlyFee}</div>
+          </div>
+          {owed ? (
+            <div className="animate-pulse rounded-xl border border-red-500/60 bg-red-500/10 px-4 py-2 text-right">
+              <div className="text-lg font-bold tabular-nums text-red-500">{summary.unpaidTotal} {summary.currency}</div>
+              <div className="text-[11px] font-semibold text-red-400">{summary.unpaidCount} {t.monthsUnpaid}</div>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-green-500/40 bg-green-500/10 px-4 py-2 text-sm font-semibold text-green-500">✓ {t.allPaid}</div>
+          )}
+        </div>
+      </div>
+
+      {/* month ledger */}
+      <div className="grid gap-2">
+        {payments.map((p) => {
+          const paid = p.status === 'paid';
+          return (
+            <div key={p.period} className={`flex items-center justify-between gap-3 rounded-xl border p-3 ${paid ? 'border-line bg-surface' : 'border-red-500/40 bg-red-500/5 ring-1 ring-red-500/30'}`}>
+              <div>
+                <div className={`text-sm font-semibold ${paid ? 'text-ink' : 'neon-text'}`}>{monthLabel(p.period, lang)}</div>
+                <div className="mt-0.5 text-xs text-muted">
+                  {p.amount} {p.currency}
+                  {paid && p.paid_at && <> · {t.paidOn} {p.paid_at.slice(0, 10)}</>}
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${paid ? 'bg-green-500/15 text-green-500' : 'bg-red-500/15 text-red-500'}`}>
+                  {paid ? `✓ ${t.paymentPaid}` : t.paymentUnpaid}
+                </span>
+                {!paid && (
+                  <button onClick={() => setPaid(p, true)} disabled={busy === p.period} className="rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-accent-ink disabled:opacity-50">
+                    {t.markPaid}
+                  </button>
+                )}
+                {paid && p.period === currentPeriod && (
+                  <button onClick={() => setPaid(p, false)} disabled={busy === p.period} className="rounded-lg border border-line px-2 py-2 text-[11px] text-muted hover:text-ink disabled:opacity-50">
+                    {t.markUnpaid}
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* payment-due popup */}
+      {toast && (
+        <div className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2">
+          <div className="flex items-center gap-2 rounded-xl border border-red-500/60 bg-surface px-4 py-3 shadow-lg">
+            <span className="text-lg">💳</span>
+            <span className="text-sm font-semibold text-ink">{toast}</span>
+            <button onClick={() => setToast(null)} className="ml-2 text-muted hover:text-ink">✕</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---------- Settings ----------
 const WEEKDAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
@@ -884,6 +1048,8 @@ function SettingsTab({ headers }) {
   const [s, setS] = useState(null);
   const [hours, setHours] = useState({});
   const [saved, setSaved] = useState(false);
+  const [logoSaved, setLogoSaved] = useState(false);
+  const { pct, send } = useUpload();
 
   useEffect(() => {
     fetch(`${API_URL}/settings`, { headers: headers() })
@@ -915,9 +1081,56 @@ function SettingsTab({ headers }) {
     setSaved(true); setTimeout(() => setSaved(false), 1500);
   };
 
+  // Logo uploads/resets hit their own endpoint immediately (multipart can't go
+  // through the JSON PUT above); local state keeps logo_image in sync so a
+  // later "Save settings" round-trips the fresh URL.
+  const uploadLogo = async (file) => {
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('logo', file);
+    try {
+      const resp = JSON.parse(await send(`${API_URL}/admin/logo`, 'POST', headers(), fd));
+      set('logo_image', resp.logo_image);
+      setLogoSaved(true); setTimeout(() => setLogoSaved(false), 2000);
+    } catch {
+      alert(t.uploadFormats);
+    }
+  };
+
+  const resetLogo = async () => {
+    if (!confirm(t.confirmResetLogo)) return;
+    await fetch(`${API_URL}/admin/logo`, { method: 'DELETE', headers: headers() });
+    set('logo_image', '');
+  };
+
   return (
     <form onSubmit={save} className="max-w-lg space-y-4">
       <h2 className="font-display text-xl font-bold text-ink">{t.settings}</h2>
+
+      <div>
+        <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">{t.logoTitle}</div>
+        <div className="flex items-center gap-4 rounded-xl border border-line bg-surface-2 p-3">
+          <img
+            src={s.logo_image ? assetUrl(s.logo_image) : `${import.meta.env.BASE_URL}driver-game-center-logo.jpeg`}
+            alt=""
+            className="neon-glow h-16 w-16 shrink-0 rounded-full border border-line object-cover"
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap gap-2">
+              <label className="cursor-pointer rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-accent-ink">
+                {logoSaved ? t.logoUpdated : t.uploadLogo}
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => { uploadLogo(e.target.files?.[0]); e.target.value = ''; }} />
+              </label>
+              {s.logo_image && (
+                <button type="button" onClick={resetLogo} className="rounded-lg border border-line px-3 py-2 text-sm text-ink">{t.resetLogo}</button>
+              )}
+            </div>
+            <p className="mt-1 text-[11px] text-muted">{t.logoHint}</p>
+          </div>
+        </div>
+      </div>
+      <UploadBar pct={pct} />
+
       <MultiLang label={t.cafeName} value={name} onChange={(v) => set('restaurant_name', JSON.stringify(v))} />
       <div className="grid grid-cols-2 gap-3">
         <Field label={t.phone} value={s.phone || ''} onChange={(e) => set('phone', e.target.value)} />
